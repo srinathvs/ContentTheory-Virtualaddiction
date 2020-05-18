@@ -4,7 +4,7 @@
 
 # TODO :Write the actual rules
 
-# TODO :Create a context analyzer
+# TODO :Create a context analyzer to analyze rule conflict and take necessary action.
 
 # TODO :Make the server check for each rule's question and answer and update the user agent's vals.
 
@@ -17,6 +17,7 @@ List Global_Disorders -> Instantiated list of all disorders
 Global_AI_Agent -> Instance of AI agent
 Global_Human_Agent -> Instance of Human agent
 RuleDict {Tuple(intensity_symptoms, intensity_category), rule} -> Helps choose next rule
+List RuleQueue -> List of rules added to the queue of rules to be assessed by the user agent.
 
 
 
@@ -61,3 +62,7 @@ class conflictAnalyzer:
 
     Analyzes context and then resolves conflict between rules by assigning priority to the rules
 """
+
+# TODO :GetCauses() -> Meant to retrieve causal agent data from user based on past cases
+
+# TODO :GetQuery() -> Meant to retrieve next query in queue and send it to the user client through the server
