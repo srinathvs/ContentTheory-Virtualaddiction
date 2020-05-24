@@ -12,9 +12,12 @@
 import textblob
 import matplotlib.pyplot as plt
 from enum import Enum
+import csv
 
 RuleDict = {}
 BaseRules = []
+reasonlist = []
+past_agents = []
 
 
 # these are the types of inputs in the system
@@ -34,55 +37,89 @@ class categories(Enum):
     anxiety = 5  # relevant for escapism, gamer motivation and social media
     loneliness = 6  # relevant for social media use and gamer motivations
     satisfaction = 7  # relevant for gamer motivations and social media use
-    stress = 8 # relevant for reasons for relapse, escapism
+    stress = 8  # relevant for reasons for relapse, escapism
 
 
 class agent:
-    def __init__(self, name, selfesteem, depression, validation, popularity, anxiety, loneliness, satisfaction,
-                 stress, disorderDict):
+    def __init__(self, name, selfesteem, depression, need_validation, anxiety, loneliness, satisfaction,
+                 stress, reasons, disorderDict):
         self.name = name
         self.selfesteem = selfesteem
         self.depression = depression
-        self.validation = validation
-        self.popularity = popularity
+        self.need_validation = need_validation
         self.anxiety = anxiety
         self.loneliness = loneliness
         self.satisfaction = satisfaction
+        self.stress = stress
+        self.reasons = reasons
         self.disorderDict = disorderDict
-
 
 
 # The rule's answer influences these scores in a certain way.
 class Rule:
-    def __init__(self, query, expectedtype, answer, category, reason, category_score):
+    def __init__(self, query, expectedtype, category, category_score, priority):
         self.query = query
         self.expectedtype = expectedtype
-        self.answer = answer
         self.category = category
-        self.reason = reason
         self.category_score = category_score
-
-
-class introspectioncategories:
-    def __init__(self, id, value, reasonlist, ):
-        self.id = id
-        self.value = value
-        self.reasonlist = reasonlist
+        self.priority = priority
 
 
 # The method to create new rules
-def createRule(query, iotype, answerstr, categoryaffected, reason, score):
-    return Rule(query, iotype, answerstr, categoryaffected, reason, score)
+def createRule(query, iotype, categoryaffected, score, priority):
+    return Rule(query, iotype, categoryaffected, score, priority)
+
+# Get the list of past agents and their values from the datafile
+def readagents():
+    global past_agents
+    with open('datafile.csv', mode='r') as csv_file:
+        csv_reader = csv.DictReader(csv_file)
+        line_count = 0
+        print("Reading data from file")
+        for row in csv_reader:
+            if line_count == 0:
+                print(f'Column names are {", ".join(row)}')
+                line_count += 1
+            print({row["name"], "is the name"})
+            past_agents.append(
+                createAgent({row["name"]}, {row["selfesteem"]}, {row["depression"]}, {row["need_validation"]},
+                            {row["anxiety"]}, {row["loneliness"]}, {row["satisfaction"]}, {row["stress"]},
+                            {row["reasonlist"]}, {row["disorderlist"]}))
+            line_count += 1
+        print(f'Processed {line_count - 1} agents.')
+
+# Write the new agent's vals to the datafile
+def writeagents(human_agent):
+    with open('datafile.csv', mode='a+') as human_agentfile:
+        human_agent_writer = csv.writer(human_agentfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        human_agent_writer.writerow([str(human_agent.name), str(human_agent.selfesteem), str(human_agent.depression),
+                                     str(human_agent.need_validation), str(human_agent.anxiety),
+                                     str(human_agent.loneliness),
+                                     str(human_agent.satisfaction), str(human_agent.stress), str(human_agent.reasons),
+                                     str(human_agent.disorderDict)])
 
 
-def createAgent():
-    return agent()
+# Meant to read rules from a csv file
+def readRules():
+    return True
+
+
+# Meant to write a new rule to the csv
+def writeRules():
+    return True
+
+
+def createAgent(name, esteem_score, depression_score, validation_score, anxiety_score, loneliness_score,
+                satisfaction_score, stress_score, reasonsforissue, disordersidentified):
+    return agent(name, esteem_score, depression_score, validation_score, anxiety_score, loneliness_score,
+                 satisfaction_score, stress_score, reasonsforissue, disordersidentified)
 
 
 def checkforname(name):
+    # TODO : Deprecate the entire function and read from csv for data and compare with input name.
     namelist = []
-    nametxt = name+"\n"
-    namefile_read = open("names.txt", "r")
+    nametxt = name + "\n"
+    namefile_read = open("datafile.csv", "r")
     if namefile_read.mode == "r":
         content = namefile_read.readlines()
         for nameInstance in content:
@@ -101,6 +138,7 @@ def checkforname(name):
 
 
 def intro():
+    readagents()
     name = input("\nEnter your name (in one word)\n")
     checkforname(name)
     print("\n Hello," + name + " this is your friendly neighbourhood AI.\n I hope you are doing fine."
@@ -108,73 +146,66 @@ def intro():
                                "\n I hope you can cooperate with me on this.\n")
 
 
-# Get initial values from user in order to build a rule tree for this particular user.
+# Get initial values from user in order to get some bae values from the user for building their initial profile
 def setupbasefeelings(name):
     checkbasefeeling_depression = createRule(
         "\nI haven't been all chipper lately.How are you feeling today ?\n",
         inputType.textblock,
-        "",
         categories.depression,
-        "",
         .1)
     BaseRules.append(checkbasefeeling_depression)
 
     print("base condition added")
-
 
     checkbasefeeling_loneliness = createRule(
         "\nI have been trying to make friends lately, "
         "I am always looking for information on making friends.\n"
         "Do you have a lot of friends ?",
         inputType.y_n,
-        "",
         categories.popularity,
-        .1)
+        .1,
+        0)
     BaseRules.append(checkbasefeeling_loneliness)
 
     print("base condition added")
 
-
     checkbasefeeling_anxiety = createRule(
         "\nAre you feeling worried about the future?\n",
         inputType.textblock,
-        "",
         categories.anxiety,
-        .1)
+        .1,
+        0)
     BaseRules.append(checkbasefeeling_anxiety)
 
     print("base condition added")
 
-
     checkbasefeelings_selfesteem = createRule(
         "\nI have been finding it hard to understand my own value lately, do you feel the same ?\n",
         inputType.y_n,
-        "",
         categories.selfesteem,
-        .2)
+        .2,
+        0)
     BaseRules.append(checkbasefeelings_selfesteem)
 
     print("base condition added")
 
-
     checkbasefeelings_satisfaction = createRule(
         "\nDo you feel satisfied with how things are currently, if not, what is unsatisfactory ?\n",
         inputType.textblock,
-        "",
         categories.satisfaction,
-        .1)
+        .1,
+        0)
     BaseRules.append(checkbasefeelings_satisfaction)
 
     print("base condition added")
 
-
-    checkbasefeelings_satisfaction = createRule(
-        "\nDo you feel as if you are under a lot of pressure with regards to work, or personal life, why do you feel that way ?\n",
+    checkbasefeelings_stress = createRule(
+        "\nDo you feel as if you are under a lot of pressure with regards to work, or personal life, if so, why? ?\n",
         inputType.textblock,
-        "",
-        categories.satisfaction,
-        .1)
-    BaseRules.append(checkbasefeelings_satisfaction)
+        categories.stress,
+        .1,
+        0)
+    BaseRules.append(checkbasefeelings_stress)
 
     print("base condition added")
 
@@ -185,7 +216,7 @@ def main():
 
 if __name__ == "__main__":
     main()
-# TODO :GetCauses() -> Meant to retrieve causal agent data from user based on past cases
+# TODO :GetCauses() -> Meant to retrieve causal agent data from user based on past cases (this is the reason)
 
 # TODO :GetQuery() -> Meant to retrieve next query in queue and send it to the user client through the server
 

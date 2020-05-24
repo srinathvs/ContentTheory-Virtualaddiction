@@ -1,15 +1,18 @@
 # This file will be reomved later, is here for testing of various functionalities before it is introduced to the main
 # program.
 
+# TODO : All other types of classifiers, to detect all sentiments in a sentence.
 import textblob
+from textblob import TextBlob
 from textblob.classifiers import NaiveBayesClassifier
+from textblob.np_extractors import ConllExtractor
 
 train_depressed = [("I feel sad", 'dep'),
                    ("I dont feel alright", 'dep'),
                    ("I dont look forward to tomorrow", 'dep'),
                    ("I wish I werent here", 'dep'),
                    ("I want all of this to end", 'dep'),
-                   ("I dont know what I am living for", 'dep'),
+                   ("I don't know what I am living for", 'dep'),
                    ("I am very happy with the way things are", 'happy'),
                    ("I am ok, still alive", 'dep'),
                    ("I am feeling good", 'happy'),
@@ -33,7 +36,26 @@ train_depressed = [("I feel sad", 'dep'),
                    ("I cant make this work", 'dep'),
                    ("I can do anything", 'happy'),
                    ("There is always a way", 'happy'),
-                   ("I feel better than before", 'happy')
+                   ("I feel better than before", 'happy'),
+                   ("I am sad", 'dep'),
+                   ("Life is pointless", 'dep'),
+                   ("Life is beautiful", 'happy'),
+                   ("There is nothing more to life", 'dep'),
+                   ("There is more to life than I can understand", 'happy'),
+                   ("I don't want to do this anymore", 'dep'),
+                   ("I wish I could be better", 'dep'),
+                   ("I have never been better", 'happy'),
+                   ("This is the worst", 'dep'),
+                   ("This is the best", 'happy'),
+                   ("I am not happy", 'dep'),
+                   ("I am sad", 'dep'),
+                   ("I feel alone", ' dep'),
+                   ("This is the best", 'happy'),
+                   ("This is not good", 'dep'),
+                   ("I am unhappy", 'dep'),
+                   ("I don't think I can feel better", 'happy'),
+                   ("I keep blaming myself", 'dep'),
+                   ("If I was a lot better, I could have saved the day", 'dep')
                    ]
 
 test_depressed = [("I don't want to do this anymore", 'dep'),
@@ -47,17 +69,39 @@ test_depressed = [("I don't want to do this anymore", 'dep'),
                   ("This is the best", 'happy'),
                   ("This is not good", 'dep'),
                   ("I am unhappy", 'dep'),
-                  ("I dont think I can feel better", 'happy')
+                  ("I don't think I can feel better", 'happy')
                   ]
 
 
-cl = NaiveBayesClassifier(train_depressed)
+# Common function for all possible training samples, this is the API provided to other classes
+def traintestclassifier(train_dataset, test_dataset, classifystring):
+    classifier = NaiveBayesClassifier(train_dataset)
+    prob_dist = classifier.prob_classify(classifystring)
+    dep_prob = round(prob_dist.prob("dep"), 2)
+    happy_prob = round(prob_dist.prob("happy"), 2)
+    print(dep_prob, "is the probability of this sentence being depressing")
+    print(happy_prob, "is the probability of this sentence being happy")
+    print(classifier.accuracy(test_dataset), "Is the accuracy")
 
-# Get input from user here.
-teststr = "I wish you would wait for me"
 
-prob_dist = cl.prob_classify(teststr)
-dep_prob = round(prob_dist.prob("dep"), 2)
-print(dep_prob, "is the probability of this sentence having a depressing air")
+# Common function to find the main actor in a sentence or the subject that sentence is about
+def findreason(sentence):
+    reason = list()
+    reasonExtractor = TextBlob(sentence)
+    for reasonInstance in reasonExtractor.noun_phrases:
+        print(reasonInstance)
+        reason.append(reasonInstance)
+    if len(reason) == 0:
+        reason.append([sentence])
+    print(len(reason))
+    return reason
 
 
+def main():
+    tempsentence = "David was the problem."
+    traintestclassifier(train_depressed, test_depressed, tempsentence)
+    print(findreason(tempsentence))
+
+
+if __name__ == "__main__":
+    main()
